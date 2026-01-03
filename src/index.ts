@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { connectDatabase } from './infrastructure/database';
+import { AppError, ValidationError } from './core/errors/AppError';
 
 // Load config
 dotenv.config();
@@ -25,12 +26,57 @@ app.get('/health', (_req, res) => {
     });
 });
 
-// Basic error handling
+app.use('/products', productRouter);
+app.use('/seed', seedRouter);
+
+// Global error handling middleware
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     console.error('Error:', err);
+
+    // Handle ValidationError (400)
+    if (err instanceof ValidationError) {
+        res.status(400).json({
+            success: false,
+            message: err.message,
+            errors: err.errors
+        });
+        return;
+    }
+
+    // Handle AppError with specific status codes
+    if (err instanceof AppError) {
+        res.status(err.statusCode).json({
+            success: false,
+            message: err.message
+        });
+        return;
+    }
+
+    // Handle Mongoose validation errors (should be caught by Zod, but just in case)
+    if (err.name === 'ValidationError') {
+        res.status(400).json({
+            success: false,
+            message: 'Validation error',
+            errors: err.message
+        });
+        return;
+    }
+
+    // Handle Mongoose CastError (invalid ObjectId)
+    if (err.name === 'CastError') {
+        res.status(400).json({
+            success: false,
+            message: 'Invalid ID format'
+        });
+        return;
+    }
+
+    // Default to 500 for unknown errors
     res.status(500).json({
         success: false,
-        message: err.message || 'Internal server error'
+        message: process.env.NODE_ENV === 'production'
+            ? 'Internal server error'
+            : err.message || 'Internal server error'
     });
 });
 
@@ -76,3 +122,5 @@ startServer();
 
 // Import mongoose for health check usage only
 import mongoose from 'mongoose';
+import { productRouter } from './modules/inventory/api/product.routes';
+import { seedRouter } from './modules/inventory/api/seed.routes';

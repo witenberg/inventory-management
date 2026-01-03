@@ -1,0 +1,104 @@
+@baseUrl = http://localhost:3000
+@contentType = application/json
+
+### 1. Health Check
+# Check if the server and database are alive.
+GET {{baseUrl}}/health
+
+### 2. Seed Database
+# Populate database with test products
+POST {{baseUrl}}/seed/products?clearExisting=true
+
+### 3. Get All Products (Default Pagination)
+# Should return first 10 products
+GET {{baseUrl}}/products
+
+### 4. Get Products with Pagination
+# Get second page with 5 items
+GET {{baseUrl}}/products?page=2&limit=5
+
+### 5. Get Products Sorted by Price (Ascending)
+GET {{baseUrl}}/products?sortBy=price&sortOrder=asc
+
+### 6. Search Products
+# Search for products containing "laptop"
+GET {{baseUrl}}/products?search=laptop
+
+### 7. Filter Products by Price Range
+# Get products between $50 and $200
+GET {{baseUrl}}/products?minPrice=50&maxPrice=200
+
+### 8. Complex Query
+# Combine pagination, sorting, and filtering
+GET {{baseUrl}}/products?page=1&limit=5&sortBy=price&sortOrder=asc&minPrice=20&maxPrice=100&minStock=10
+
+### 9. Get Product by ID
+# Replace with actual ID from previous response
+GET {{baseUrl}}/products/69599f9385c8719f8f17e986
+
+### 10. Create Product (Valid)
+POST {{baseUrl}}/products
+Content-Type: {{contentType}}
+
+{
+    "name": "New Laptop",
+    "description": "High performance laptop",
+    "price": 1299.99,
+    "stock": 10
+}
+
+### 11. Create Product (Validation Error - Missing Name)
+# Should return 400 with Zod validation error
+POST {{baseUrl}}/products
+Content-Type: {{contentType}}
+
+{
+    "description": "No name provided",
+    "price": 100,
+    "stock": 10
+}
+
+### 12. Create Product (Validation Error - Negative Price)
+# Should return 400 with Zod validation error
+POST {{baseUrl}}/products
+Content-Type: {{contentType}}
+
+{
+    "name": "Invalid Price Product",
+    "price": -10,
+    "stock": 50
+}
+
+### 13. Create Product (Validation Error - Name Too Long)
+# Should return 400 - name exceeds 50 characters
+POST {{baseUrl}}/products
+Content-Type: {{contentType}}
+
+{
+    "name": "Very loooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong product name",
+    "price": 99.99,
+    "stock": 20
+}
+
+### 14. Create Product (Validation Error - Invalid Stock)
+# Should return 400 - stock must be integer
+POST {{baseUrl}}/products
+Content-Type: {{contentType}}
+
+{
+    "name": "Invalid Stock",
+    "price": 50,
+    "stock": 10.5
+}
+
+### 15. Get Products with Invalid Query Parameters
+# Should return 400 with validation errors
+GET {{baseUrl}}/products?page=-1&limit=200&sortBy=invalid
+
+### 16. Get Product with Invalid ID Format
+# Should return 400 - invalid ObjectId format
+GET {{baseUrl}}/products/invalid-id-format
+
+### 17. Clear All Products
+# Useful for testing
+DELETE {{baseUrl}}/seed/products
