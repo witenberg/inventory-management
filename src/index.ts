@@ -1,7 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { connectDatabase } from './infrastructure/database';
 
+// Load config
 dotenv.config();
 
 const app = express();
@@ -12,11 +14,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
+// --- Routes ---
 app.get('/health', (_req, res) => {
+    const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+
     res.json({
         status: 'ok',
-        message: 'Server is running',
+        database: dbStatus,
         timestamp: new Date().toISOString()
     });
 });
@@ -39,19 +43,36 @@ app.use((_req, res) => {
 });
 
 // Start server
-const server = app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-    console.log(`Health check available at http://localhost:${PORT}/health`);
-});
+const startServer = async () => {
+    try {
+        await connectDatabase();
 
-// Handle port already in use error
-server.on('error', (err: NodeJS.ErrnoException) => {
-    if (err.code === 'EADDRINUSE') {
-        console.error(`Port ${PORT} is already in use. Please choose a different port.`);
-        console.error(`You can set a different port using environment variable PORT`);
-        process.exit(1);
-    } else {
-        console.error('Failed to start server:', err);
+        const server = app.listen(PORT, () => {
+            console.log(`Server is running on port ${PORT}`);
+            console.log(`Health check available at http://localhost:${PORT}/health`);
+        });
+
+        // Graceful shutdown
+        const shutdown = () => {
+            console.log('Shutting down server...');
+            server.close(() => {
+                mongoose.connection.close(false).then(() => {
+                    console.log('MongoDB connection closed');
+                    process.exit(0);
+                });
+            });
+        };
+
+        process.on('SIGTERM', shutdown);
+        process.on('SIGINT', shutdown);
+
+    } catch (error) {
+        console.error('Failed to start application:', error);
         process.exit(1);
     }
-});
+};
+
+startServer();
+
+// Import mongoose for health check usage only
+import mongoose from 'mongoose';
