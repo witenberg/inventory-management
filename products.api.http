@@ -102,3 +102,143 @@ GET {{baseUrl}}/products/invalid-id-format
 ### 17. Clear All Products
 # Useful for testing
 DELETE {{baseUrl}}/seed/products
+
+### ========================================
+### STOCK MANAGEMENT ENDPOINTS
+### ========================================
+
+### 18. Restock Product (Valid)
+# Increases stock level of a product
+# Replace ID with actual product ID from previous responses
+POST {{baseUrl}}/products/695a56b20b95981883608cde/restock
+Content-Type: {{contentType}}
+
+{
+    "quantity": 50
+}
+
+### 19. Restock Product (Validation Error - Negative Quantity)
+# Should return 400 - quantity must be positive
+POST {{baseUrl}}/products/69599f9385c8719f8f17e986/restock
+Content-Type: {{contentType}}
+
+{
+    "quantity": -10
+}
+
+### 20. Restock Product (Validation Error - Decimal Quantity)
+# Should return 400 - quantity must be an integer
+POST {{baseUrl}}/products/69599f9385c8719f8f17e986/restock
+Content-Type: {{contentType}}
+
+{
+    "quantity": 25.5
+}
+
+### 21. Restock Product (Validation Error - Missing Quantity)
+# Should return 400 - quantity is required
+POST {{baseUrl}}/products/69599f9385c8719f8f17e986/restock
+Content-Type: {{contentType}}
+
+{
+}
+
+### 22. Restock Product (Product Not Found)
+# Should return 404 - product doesn't exist
+POST {{baseUrl}}/products/000000000000000000000000/restock
+Content-Type: {{contentType}}
+
+{
+    "quantity": 10
+}
+
+### 23. Sell Product (Valid)
+# Decreases stock level of a product
+# Replace ID with actual product ID from previous responses
+POST {{baseUrl}}/products/695a56b20b95981883608cde/sell
+Content-Type: {{contentType}}
+
+{
+    "quantity": 5
+}
+
+### 24. Sell Product (Validation Error - Negative Quantity)
+# Should return 400 - quantity must be positive
+POST {{baseUrl}}/products/69599f9385c8719f8f17e986/sell
+Content-Type: {{contentType}}
+
+{
+    "quantity": -5
+}
+
+### 25. Sell Product (Validation Error - Decimal Quantity)
+# Should return 400 - quantity must be an integer
+POST {{baseUrl}}/products/69599f9385c8719f8f17e986/sell
+Content-Type: {{contentType}}
+
+{
+    "quantity": 3.7
+}
+
+### 26. Sell Product (Insufficient Stock)
+# Should return 400 - not enough stock available
+# First, get a product and check its stock, then try to sell more than available
+POST {{baseUrl}}/products/695a56b20b95981883608cde/sell
+Content-Type: {{contentType}}
+
+{
+    "quantity": 999999
+}
+
+### 27. Sell Product (Product Not Found)
+# Should return 404 - product doesn't exist
+POST {{baseUrl}}/products/000000000000000000000000/sell
+Content-Type: {{contentType}}
+
+{
+    "quantity": 1
+}
+
+### ========================================
+### RACE CONDITION TESTING
+### ========================================
+### These tests should be run concurrently to verify atomic operations
+### In VS Code REST Client, you can select multiple requests and run them together
+
+### 28. Concurrent Restock Test - Request 1
+# Run this simultaneously with request 29 to test race condition protection
+POST {{baseUrl}}/products/695a56b20b95981883608cde/restock
+Content-Type: {{contentType}}
+
+{
+    "quantity": 10
+}
+
+### 29. Concurrent Restock Test - Request 2
+# Run this simultaneously with request 28 to test race condition protection
+POST {{baseUrl}}/products/695a56b20b95981883608cde/restock
+Content-Type: {{contentType}}
+
+{
+    "quantity": 15
+}
+
+### 30. Concurrent Sell Test - Request 1
+# Create a product with stock=10, then run this with request 31 simultaneously
+# Both request 5 items. Only one should succeed, the other should fail with insufficient stock
+POST {{baseUrl}}/products/69599f9385c8719f8f17e986/sell
+Content-Type: {{contentType}}
+
+{
+    "quantity": 8
+}
+
+### 31. Concurrent Sell Test - Request 2
+# Run this simultaneously with request 30 to test race condition protection
+# One should succeed, one should fail with insufficient stock error
+POST {{baseUrl}}/products/69599f9385c8719f8f17e986/sell
+Content-Type: {{contentType}}
+
+{
+    "quantity": 8
+}

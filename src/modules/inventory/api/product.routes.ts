@@ -1,12 +1,18 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { CreateProductCommand } from '../commands/create-product.command';
 import { CreateProductHandler } from '../commands/handlers/create-product.handler';
+import { RestockProductCommand } from '../commands/restock-product.command';
+import { RestockProductHandler } from '../commands/handlers/restock-product.handler';
+import { SellProductCommand } from '../commands/sell-product.command';
+import { SellProductHandler } from '../commands/handlers/sell-product.handler';
 import { GetProductsQuery } from '../queries/get-products.query';
 import { GetProductsHandler } from '../queries/handlers/get-products.handler';
 import { GetProductByIdQuery } from '../queries/get-product-by-id.query';
 import { GetProductByIdHandler } from '../queries/handlers/get-product-by-id.handler';
 import { validate } from '../../../core/middleware/validate.middleware';
 import { createProductSchema } from '../commands/validation/create-product.schema';
+import { restockProductSchema, restockProductParamsSchema } from '../commands/validation/restock-product.schema';
+import { sellProductSchema, sellProductParamsSchema } from '../commands/validation/sell-product.schema';
 import { getProductsSchema } from '../queries/validation/get-products.schema';
 import { getProductByIdSchema } from '../queries/validation/get-product-by-id.schema';
 
@@ -14,6 +20,8 @@ const router = Router();
 
 // Dependency Injection (simplified for this task)
 const createProductHandler = new CreateProductHandler();
+const restockProductHandler = new RestockProductHandler();
+const sellProductHandler = new SellProductHandler();
 const getProductsHandler = new GetProductsHandler();
 const getProductByIdHandler = new GetProductByIdHandler();
 
@@ -109,5 +117,88 @@ router.post('/', validate(createProductSchema, 'body'), async (req: Request, res
         next(error);
     }
 });
+
+/**
+ * POST /products/:id/restock
+ * Increases the stock level of a product.
+ * 
+ * Uses atomic operations to prevent race conditions when multiple
+ * restock requests arrive simultaneously.
+ * 
+ * Body Parameters:
+ * - quantity: number (positive integer) - Amount to add to stock
+ * 
+ * Example: POST /products/507f1f77bcf86cd799439011/restock
+ * Body: { "quantity": 50 }
+ */
+router.post(
+    '/:id/restock',
+    validate(restockProductParamsSchema, 'params'),
+    validate(restockProductSchema, 'body'),
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { quantity } = req.body;
+            const { id } = req.params;
+
+            const command = new RestockProductCommand({
+                productId: id,
+                quantity
+            });
+
+            const updatedProduct = await restockProductHandler.execute(command);
+
+            res.status(200).json({
+                success: true,
+                data: updatedProduct,
+                message: `Product restocked successfully. New stock: ${updatedProduct.stock}`
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+);
+
+/**
+ * POST /products/:id/sell
+ * Decreases the stock level of a product.
+ * 
+ * Uses atomic operations with conditional updates to ensure:
+ * 1. Stock never goes below zero
+ * 2. Race conditions are prevented when multiple sell requests arrive simultaneously
+ * 
+ * Body Parameters:
+ * - quantity: number (positive integer) - Amount to subtract from stock
+ * 
+ * Returns 400 if insufficient stock is available.
+ * 
+ * Example: POST /products/507f1f77bcf86cd799439011/sell
+ * Body: { "quantity": 5 }
+ */
+router.post(
+    '/:id/sell',
+    validate(sellProductParamsSchema, 'params'),
+    validate(sellProductSchema, 'body'),
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { quantity } = req.body;
+            const { id } = req.params;
+
+            const command = new SellProductCommand({
+                productId: id,
+                quantity
+            });
+
+            const updatedProduct = await sellProductHandler.execute(command);
+
+            res.status(200).json({
+                success: true,
+                data: updatedProduct,
+                message: `Product sold successfully. Remaining stock: ${updatedProduct.stock}`
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+);
 
 export const productRouter = router;
