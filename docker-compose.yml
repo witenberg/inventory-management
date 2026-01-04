@@ -7,6 +7,7 @@ services:
       - "27017:27017"
     environment:
       MONGO_INITDB_DATABASE: inventory-management
+    command: ["--replSet", "rs0", "--bind_ip_all"]
     volumes:
       - mongodb_data:/data/db
     networks:
@@ -16,6 +17,29 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  mongo-init:
+    image: mongo:7.0
+    container_name: mongo-init
+    restart: "no"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - inventory-network
+    command: >
+      mongosh --host mongodb:27017 --eval "
+      try {
+        rs.status();
+        print('Replica set already initialized');
+      } catch(e) {
+        rs.initiate({
+          _id: 'rs0',
+          members: [{ _id: 0, host: 'mongodb:27017' }]
+        });
+        print('Replica set initialized');
+      }
+      "
 
   app:
     build:
@@ -28,7 +52,7 @@ services:
       - "3000:3000"
     environment:
       PORT: 3000
-      MONGODB_URI: mongodb://mongodb:27017/inventory-management
+      MONGODB_URI: mongodb://mongodb:27017/inventory-management?replicaSet=rs0
       NODE_ENV: production
     depends_on:
       mongodb:

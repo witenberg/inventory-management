@@ -154,7 +154,6 @@ Content-Type: {{contentType}}
 
 ### 23. Sell Product (Valid)
 # Decreases stock level of a product
-# Replace ID with actual product ID from previous responses
 POST {{baseUrl}}/products/695a56b20b95981883608cde/sell
 Content-Type: {{contentType}}
 
@@ -182,7 +181,6 @@ Content-Type: {{contentType}}
 
 ### 26. Sell Product (Insufficient Stock)
 # Should return 400 - not enough stock available
-# First, get a product and check its stock, then try to sell more than available
 POST {{baseUrl}}/products/695a56b20b95981883608cde/sell
 Content-Type: {{contentType}}
 
@@ -202,11 +200,8 @@ Content-Type: {{contentType}}
 ### ========================================
 ### RACE CONDITION TESTING
 ### ========================================
-### These tests should be run concurrently to verify atomic operations
-### In VS Code REST Client, you can select multiple requests and run them together
 
 ### 28. Concurrent Restock Test - Request 1
-# Run this simultaneously with request 29 to test race condition protection
 POST {{baseUrl}}/products/695a56b20b95981883608cde/restock
 Content-Type: {{contentType}}
 
@@ -215,7 +210,6 @@ Content-Type: {{contentType}}
 }
 
 ### 29. Concurrent Restock Test - Request 2
-# Run this simultaneously with request 28 to test race condition protection
 POST {{baseUrl}}/products/695a56b20b95981883608cde/restock
 Content-Type: {{contentType}}
 
@@ -224,8 +218,6 @@ Content-Type: {{contentType}}
 }
 
 ### 30. Concurrent Sell Test - Request 1
-# Create a product with stock=10, then run this with request 31 simultaneously
-# Both request 5 items. Only one should succeed, the other should fail with insufficient stock
 POST {{baseUrl}}/products/69599f9385c8719f8f17e986/sell
 Content-Type: {{contentType}}
 
@@ -234,8 +226,6 @@ Content-Type: {{contentType}}
 }
 
 ### 31. Concurrent Sell Test - Request 2
-# Run this simultaneously with request 30 to test race condition protection
-# One should succeed, one should fail with insufficient stock error
 POST {{baseUrl}}/products/69599f9385c8719f8f17e986/sell
 Content-Type: {{contentType}}
 

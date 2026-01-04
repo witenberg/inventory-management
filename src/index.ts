@@ -27,7 +27,10 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/products', productRouter);
+app.use('/orders', orderRouter);
+app.use('/customers', customerRouter);
 app.use('/seed', seedRouter);
+app.use('/seed', customerSeedRouter);
 
 // Global error handling middleware
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -124,3 +127,6 @@ startServer();
 import mongoose from 'mongoose';
 import { productRouter } from './modules/inventory/api/product.routes';
 import { seedRouter } from './modules/inventory/api/seed.routes';
+import { orderRouter } from './modules/orders/api/order.routes';
+import { customerRouter } from './modules/customers/api/customer.routes';
+import { customerSeedRouter } from './modules/customers/api/seed.routes';

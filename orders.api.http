@@ -1,0 +1,482 @@
+@baseUrl = http://localhost:3000
+@contentType = application/json
+
+### ========================================
+### SETUP - Seed Test Data
+### ========================================
+
+### 0a. Seed Products
+POST {{baseUrl}}/seed/products?clearExisting=true
+
+### 0b. Seed Customers
+# Creates 8 test customers (3 US, 3 Europe, 2 Asia)
+POST {{baseUrl}}/seed/customers?clearExisting=true
+
+### ========================================
+### CUSTOMER MANAGEMENT
+### ========================================
+
+### 1. Create Customer - US Location
+POST {{baseUrl}}/customers
+Content-Type: {{contentType}}
+
+{
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "location": "US"
+}
+
+### 2. Create Customer - Europe Location
+POST {{baseUrl}}/customers
+Content-Type: {{contentType}}
+
+{
+    "name": "Anna Kowalska",
+    "email": "anna.kowalska@example.pl",
+    "location": "EUROPE"
+}
+
+### 3. Create Customer - Asia Location
+POST {{baseUrl}}/customers
+Content-Type: {{contentType}}
+
+{
+    "name": "Li Wei",
+    "email": "li.wei@example.cn",
+    "location": "ASIA"
+}
+
+### 4. Get All Customers
+GET {{baseUrl}}/customers
+
+### 5. Get Customer by ID
+# Replace with actual customer ID from previous responses
+GET {{baseUrl}}/customers/695a5c9c79b4b500ad27dcac
+
+### 6. Create Customer (Validation Error - Duplicate Email)
+POST {{baseUrl}}/customers
+Content-Type: {{contentType}}
+
+{
+    "name": "John Duplicate",
+    "email": "john.doe@example.com",
+    "location": "US"
+}
+
+### 7. Create Customer (Validation Error - Invalid Location)
+POST {{baseUrl}}/customers
+Content-Type: {{contentType}}
+
+{
+    "name": "Invalid Location",
+    "email": "invalid@example.com",
+    "location": "INVALID"
+}
+
+### ========================================
+### ORDER MANAGEMENT - BASIC ORDERS
+### ========================================
+
+### 8. Create Order - Simple Order (US Customer)
+# Standard pricing, no discounts (less than 5 units)
+# Replace customerId and productIds with actual IDs
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "695a5c9c79b4b500ad27dcac",
+    "products": [
+        {
+            "productId": "695a5c9379b4b500ad27dca3",
+            "quantity": 2
+        }
+    ]
+}
+
+### 9. Create Order - Europe Customer (Location Pricing)
+# Prices increased by 15% due to VAT
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "695a5c9c79b4b500ad27dcae",
+    "products": [
+        {
+            "productId": "695a5c9379b4b500ad27dca3",
+            "quantity": 3
+        }
+    ]
+}
+
+### 10. Create Order - Asia Customer (Location Pricing)
+# Prices reduced by 5% due to lower logistics costs
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "695a5c9c79b4b500ad27dcb1",
+    "products": [
+        {
+            "productId": "695a5c9379b4b500ad27dca3",
+            "quantity": 2
+        }
+    ]
+}
+
+### ========================================
+### ORDER MANAGEMENT - VOLUME DISCOUNTS
+### ========================================
+
+### 11. Create Order - Volume Discount 10% (5-9 units)
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "695a5c9c79b4b500ad27dcb1",
+    "products": [
+        {
+            "productId": "695a5c9379b4b500ad27dca3",
+            "quantity": 5
+        }
+    ]
+}
+
+### 12. Create Order - Volume Discount 20% (10-49 units)
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "695a5c9c79b4b500ad27dcb1",
+    "products": [
+        {
+            "productId": "695a5c9379b4b500ad27dca3",
+            "quantity": 10
+        }
+    ]
+}
+
+### 13. Create Order - Volume Discount 30% (50+ units)
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "695a5c9c79b4b500ad27dcb1",
+    "products": [
+        {
+            "productId": "695a5c9379b4b500ad27dca3",
+            "quantity": 50
+        }
+    ]
+}
+
+### 14. Create Order - Multiple Products (Volume Discount on Total)
+# Total quantity: 3 + 4 = 7 units -> 10% discount
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "695a5c9c79b4b500ad27dcb1",
+    "products": [
+        {
+            "productId": "695a5c9379b4b500ad27dca3",
+            "quantity": 3
+        },
+        {
+            "productId": "695a5c9379b4b500ad27dca5",
+            "quantity": 4
+        }
+    ]
+}
+
+### ========================================
+### ORDER MANAGEMENT - SEASONAL DISCOUNTS
+### ========================================
+
+### 15. Create Order - Black Friday (25% Discount)
+# Test during Nov 24-30
+# Note: This will only work if current date is in Black Friday period
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "695a5c9c79b4b500ad27dcb1",
+    "products": [
+        {
+            "productId": "695a5c9379b4b500ad27dca5",
+            "quantity": 3
+        }
+    ]
+}
+
+### 16. Create Order - Holiday Sales Christmas (15% Discount)
+# Test during Dec 15-26
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "695a5c9c79b4b500ad27dcb1",
+    "products": [
+        {
+            "productId": "695a5c9379b4b500ad27dca5",
+            "quantity": 3
+        }
+    ]
+}
+
+### 17. Create Order - Holiday Sales New Year (15% Discount)
+# Test during Dec 27 - Jan 6
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "679a1234567890abcdef1234",
+    "products": [
+        {
+            "productId": "695a56b20b95981883608cde",
+            "quantity": 3
+        }
+    ]
+}
+
+### ========================================
+### ORDER MANAGEMENT - DISCOUNT COMPARISON
+### ========================================
+
+### 18. Create Order - Best Discount Selection
+# Volume: 10 units = 20% discount
+# Promotional: Black Friday = 25% discount (if active)
+# System should apply Black Friday (higher discount)
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "695a5c9c79b4b500ad27dcb1",
+    "products": [
+        {
+            "productId": "695a5c9379b4b500ad27dca5",
+            "quantity": 10
+        }
+    ]
+}
+
+### 19. Create Order - Volume vs Promotional
+# Volume: 50 units = 30% discount
+# Promotional: Holiday Sales = 15% discount (if active)
+# System should apply Volume discount (higher)
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "679a1234567890abcdef1234",
+    "products": [
+        {
+            "productId": "695a56b20b95981883608cde",
+            "quantity": 50
+        }
+    ]
+}
+
+### ========================================
+### ORDER MANAGEMENT - ERROR CASES
+### ========================================
+
+### 20. Create Order - Customer Not Found
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "000000000000000000000000",
+    "products": [
+        {
+            "productId": "695a56b20b95981883608cde",
+            "quantity": 2
+        }
+    ]
+}
+
+### 21. Create Order - Product Not Found
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "679a1234567890abcdef1234",
+    "products": [
+        {
+            "productId": "000000000000000000000000",
+            "quantity": 2
+        }
+    ]
+}
+
+### 22. Create Order - Insufficient Stock
+# Try to order more than available
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "679a1234567890abcdef1234",
+    "products": [
+        {
+            "productId": "695a56b20b95981883608cde",
+            "quantity": 999999
+        }
+    ]
+}
+
+### 23. Create Order - Validation Error (Empty Products)
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "679a1234567890abcdef1234",
+    "products": []
+}
+
+### 24. Create Order - Validation Error (Negative Quantity)
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "679a1234567890abcdef1234",
+    "products": [
+        {
+            "productId": "695a56b20b95981883608cde",
+            "quantity": -5
+        }
+    ]
+}
+
+### 25. Create Order - Validation Error (Decimal Quantity)
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "679a1234567890abcdef1234",
+    "products": [
+        {
+            "productId": "695a56b20b95981883608cde",
+            "quantity": 2.5
+        }
+    ]
+}
+
+### ========================================
+### ORDER RETRIEVAL
+### ========================================
+
+### 26. Get Order by ID
+# Replace with actual order ID from previous responses
+GET {{baseUrl}}/orders/679a1234567890abcdef1234
+
+### 27. Get Order by ID - Not Found
+GET {{baseUrl}}/orders/000000000000000000000000
+
+### ========================================
+### RACE CONDITION TESTING
+### ========================================
+
+### 28. Concurrent Order Test - Request 1
+# Create a product with stock=10, then run this with request 29 simultaneously
+# Both orders request 8 items. Only one should succeed.
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "679a1234567890abcdef1234",
+    "products": [
+        {
+            "productId": "695a56b20b95981883608cde",
+            "quantity": 8
+        }
+    ]
+}
+
+### 29. Concurrent Order Test - Request 2
+# Run simultaneously with request 28
+# One should succeed, one should fail with insufficient stock
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "679a1234567890abcdef5678",
+    "products": [
+        {
+            "productId": "695a56b20b95981883608cde",
+            "quantity": 8
+        }
+    ]
+}
+
+### ========================================
+### COMPLEX SCENARIOS
+### ========================================
+
+### 30. Create Order - Europe Customer + Volume Discount
+# Location: +15% pricing
+# Volume: 10 units = 20% discount
+# Discount applies AFTER location pricing
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "679a1234567890abcdef5678",
+    "products": [
+        {
+            "productId": "695a56b20b95981883608cde",
+            "quantity": 10
+        }
+    ]
+}
+
+### 31. Create Order - Asia Customer + Promotional Discount
+# Location: -5% pricing
+# Promotional: 15% discount (if active)
+# Discount applies AFTER location pricing
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "679a1234567890abcdef9abc",
+    "products": [
+        {
+            "productId": "695a56b20b95981883608cde",
+            "quantity": 3
+        }
+    ]
+}
+
+### 32. Create Order - Large Multi-Product Order
+# Multiple products, high volume, complex pricing
+POST {{baseUrl}}/orders
+Content-Type: {{contentType}}
+
+{
+    "customerId": "679a1234567890abcdef1234",
+    "products": [
+        {
+            "productId": "695a56b20b95981883608cde",
+            "quantity": 20
+        },
+        {
+            "productId": "695a56b20b95981883608cdf",
+            "quantity": 15
+        },
+        {
+            "productId": "695a56b20b95981883608ce0",
+            "quantity": 25
+        }
+    ]
+}
+
+### ========================================
+### VERIFICATION WORKFLOW
+### ========================================
+
+### 33. Verify Stock After Order
+# After creating an order, check product stock to verify it was decremented
+GET {{baseUrl}}/products/695a56b20b95981883608cde
+
+### 34. Verify Order Details
+# Check complete order details including pricing breakdown
+GET {{baseUrl}}/orders/695a637f9e2fa2b922b1394d
+
