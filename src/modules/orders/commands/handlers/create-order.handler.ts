@@ -7,6 +7,8 @@ import { ProductModel } from '../../../inventory/domain/product.model';
 import { AppError } from '../../../../core/errors/AppError';
 import { PricingService } from '../../services/pricing.service';
 import { DiscountService } from '../../services/discount.service';
+import { EventBus } from '../../../../core/events';
+import { OrderCreatedEvent } from '../../domain/events';
 
 /**
  * Handles the creation of new orders.
@@ -32,10 +34,12 @@ import { DiscountService } from '../../services/discount.service';
 export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, string> {
     private pricingService: PricingService;
     private discountService: DiscountService;
+    private eventBus: EventBus;
 
     constructor() {
         this.pricingService = new PricingService();
         this.discountService = new DiscountService();
+        this.eventBus = EventBus.getInstance();
     }
 
     async execute(command: CreateOrderCommand): Promise<string> {
@@ -141,7 +145,19 @@ export class CreateOrderHandler implements ICommandHandler<CreateOrderCommand, s
             // Commit transaction
             await session.commitTransaction();
 
-            return order._id.toString();
+            const orderId = order._id.toString();
+
+            // Publish domain event
+            const event = new OrderCreatedEvent(
+                orderId,
+                order.orderNumber,
+                customer._id.toString(),
+                totalAmount,
+                orderProducts.length
+            );
+            await this.eventBus.publish(event);
+
+            return orderId;
 
         } catch (error) {
             // Rollback transaction on any error

@@ -1,6 +1,8 @@
 import { ICommandHandler } from '../../../../core/cqrs';
 import { SeedCustomersCommand } from '../seed-customers.command';
 import { CustomerModel, CustomerLocation } from '../../domain/customer.model';
+import { EventBus } from '../../../../core/events';
+import { CustomersSeededEvent } from '../../domain/events';
 
 /**
  * Result of seeding operation.
@@ -15,6 +17,11 @@ export interface SeedCustomersResult {
  * Handler for seeding test customers.
  */
 export class SeedCustomersHandler implements ICommandHandler<SeedCustomersCommand, SeedCustomersResult> {
+    private eventBus: EventBus;
+
+    constructor() {
+        this.eventBus = EventBus.getInstance();
+    }
 
     async execute(command: SeedCustomersCommand): Promise<SeedCustomersResult> {
         const { clearExisting } = command.payload;
@@ -77,6 +84,13 @@ export class SeedCustomersHandler implements ICommandHandler<SeedCustomersComman
             email: c.email,
             location: c.location,
         }));
+
+        // Publish domain event
+        const event = new CustomersSeededEvent(
+            createdCustomers.length,
+            createdCustomers.map(c => c._id.toString())
+        );
+        await this.eventBus.publish(event);
 
         return {
             count: createdCustomers.length,

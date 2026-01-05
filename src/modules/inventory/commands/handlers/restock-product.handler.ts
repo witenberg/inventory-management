@@ -2,6 +2,8 @@ import { ICommandHandler } from '../../../../core/cqrs';
 import { RestockProductCommand } from '../restock-product.command';
 import { ProductModel, ProductData } from '../../domain/product.model';
 import { AppError } from '../../../../core/errors/AppError';
+import { EventBus } from '../../../../core/events';
+import { ProductRestockedEvent } from '../../domain/events';
 
 /**
  * Handles the restocking of products.
@@ -17,6 +19,11 @@ import { AppError } from '../../../../core/errors/AppError';
  * that each increment is applied sequentially without data loss.
  */
 export class RestockProductHandler implements ICommandHandler<RestockProductCommand, ProductData> {
+    private eventBus: EventBus;
+
+    constructor() {
+        this.eventBus = EventBus.getInstance();
+    }
 
     async execute(command: RestockProductCommand): Promise<ProductData> {
         const { productId, quantity } = command.payload;
@@ -39,6 +46,14 @@ export class RestockProductHandler implements ICommandHandler<RestockProductComm
             if (!updatedProduct) {
                 throw new AppError('Product not found', 404);
             }
+
+            // Publish domain event
+            const event = new ProductRestockedEvent(
+                productId,
+                quantity,
+                updatedProduct.stock
+            );
+            await this.eventBus.publish(event);
 
             return updatedProduct;
 

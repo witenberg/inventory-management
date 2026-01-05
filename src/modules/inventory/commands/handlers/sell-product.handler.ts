@@ -2,6 +2,8 @@ import { ICommandHandler } from '../../../../core/cqrs';
 import { SellProductCommand } from '../sell-product.command';
 import { ProductModel, ProductData } from '../../domain/product.model';
 import { AppError } from '../../../../core/errors/AppError';
+import { EventBus } from '../../../../core/events';
+import { ProductSoldEvent } from '../../domain/events';
 
 /**
  * Handles the selling of products (decreasing stock).
@@ -26,6 +28,11 @@ import { AppError } from '../../../../core/errors/AppError';
  * - With protection: One request succeeds (stock=2), other fails (insufficient stock)
  */
 export class SellProductHandler implements ICommandHandler<SellProductCommand, ProductData> {
+    private eventBus: EventBus;
+
+    constructor() {
+        this.eventBus = EventBus.getInstance();
+    }
 
     async execute(command: SellProductCommand): Promise<ProductData> {
         const { productId, quantity } = command.payload;
@@ -63,6 +70,14 @@ export class SellProductHandler implements ICommandHandler<SellProductCommand, P
                     400
                 );
             }
+
+            // Publish domain event
+            const event = new ProductSoldEvent(
+                productId,
+                quantity,
+                updatedProduct.stock
+            );
+            await this.eventBus.publish(event);
 
             return updatedProduct;
 

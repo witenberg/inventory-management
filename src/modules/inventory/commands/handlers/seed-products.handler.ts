@@ -2,6 +2,8 @@ import { ICommandHandler } from '../../../../core/cqrs';
 import { SeedProductsCommand } from '../seed-products.command';
 import { ProductModel } from '../../domain/product.model';
 import { AppError } from '../../../../core/errors/AppError';
+import { EventBus } from '../../../../core/events';
+import { ProductsSeededEvent } from '../../domain/events';
 
 /**
  * Handler for seeding the database with test products.
@@ -13,6 +15,11 @@ import { AppError } from '../../../../core/errors/AppError';
  * - Returns summary of operation
  */
 export class SeedProductsHandler implements ICommandHandler<SeedProductsCommand, { count: number; message: string }> {
+    private eventBus: EventBus;
+
+    constructor() {
+        this.eventBus = EventBus.getInstance();
+    }
 
     /**
      * Predefined test products with realistic data
@@ -141,6 +148,13 @@ export class SeedProductsHandler implements ICommandHandler<SeedProductsCommand,
 
             // Insert test products
             const insertedProducts = await ProductModel.insertMany(productsToInsert);
+
+            // Publish domain event
+            const event = new ProductsSeededEvent(
+                insertedProducts.length,
+                insertedProducts.map(p => p._id.toString())
+            );
+            await this.eventBus.publish(event);
 
             return {
                 count: insertedProducts.length,

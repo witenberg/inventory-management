@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { connectDatabase } from './infrastructure/database';
 import { AppError, ValidationError } from './core/errors/AppError';
+import { bootstrapEventHandlers } from './config/event-handlers.bootstrap';
 
 // Load config
 dotenv.config();
@@ -95,6 +96,9 @@ app.use((_req, res) => {
 const startServer = async () => {
     try {
         await connectDatabase();
+
+        // Bootstrap event handlers
+        bootstrapEventHandlers();
 
         const server = app.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);
